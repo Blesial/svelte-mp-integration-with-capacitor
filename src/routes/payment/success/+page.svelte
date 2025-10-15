@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
+	import { Browser } from '@capacitor/browser';
 
 	// Parámetros que MP envía en la URL
 	let paymentId = '';
@@ -24,10 +25,9 @@
 			merchantOrderId
 		});
 
-		// Si estamos en app móvil, cerrar el browser
+		// Si estamos en app móvil, cerrar el browser automáticamente
 		if ((window as any).Capacitor) {
 			setTimeout(async () => {
-				const { Browser } = await import('@capacitor/browser');
 				await Browser.close();
 			}, 3000); // Cerrar después de 3 segundos
 		}
@@ -77,10 +77,6 @@
 		<div class="actions">
 			<a href="/" class="btn-primary">Volver al inicio</a>
 		</div>
-
-		{#if (window as any).Capacitor}
-			<p class="mobile-note">Esta ventana se cerrará automáticamente en 3 segundos...</p>
-		{/if}
 	</div>
 </main>
 

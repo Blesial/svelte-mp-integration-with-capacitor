@@ -1,10 +1,26 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { PUBLIC_APP_URL } from '$env/static/public';
+	import { Browser } from '@capacitor/browser';
 
 	let sellers: any[] = [];
 	let loading = true;
+	let oauthUrl = '/api/mp/oauth/start';
 
 	onMount(async () => {
+		// Detectar si estamos en Capacitor (mobile)
+		const isCapacitor = (window as any).Capacitor;
+
+		if (isCapacitor) {
+			// En mobile, usar tunnel URL para OAuth
+			oauthUrl = `${PUBLIC_APP_URL}/api/mp/oauth/start`;
+			console.log('🔗 Mobile detected, using tunnel URL for OAuth:', oauthUrl);
+		} else {
+			// En web, usar ruta relativa
+			oauthUrl = '/api/mp/oauth/start';
+			console.log('🌐 Web detected, using relative URL for OAuth');
+		}
+
 		// Obtener lista de sellers conectados (para debug)
 		try {
 			const res = await fetch('/api/mp/sellers');
@@ -17,6 +33,33 @@
 			loading = false;
 		}
 	});
+
+	async function handleOAuthConnect() {
+		const isCapacitor = (window as any).Capacitor;
+
+		if (isCapacitor) {
+			// En mobile, abrir OAuth en Browser de Capacitor
+			console.log('🔗 Opening OAuth in Capacitor Browser:', oauthUrl);
+
+			// Listener para cuando se cierra el browser
+			const listener = await Browser.addListener('browserFinished', () => {
+				console.log('🔗 OAuth browser closed');
+				// Recargar sellers para mostrar el nuevo seller conectado
+				location.reload();
+				listener.remove();
+			});
+
+			// Abrir browser con opciones optimizadas
+			await Browser.open({ 
+				url: oauthUrl,
+				presentationStyle: 'fullscreen',
+				toolbarColor: '#ffffff'
+			});
+		} else {
+			// En web, redirigir normalmente
+			window.location.href = oauthUrl;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -30,9 +73,9 @@
 		<h2>Paso 1: Autorizar tu cuenta</h2>
 		<p>Para vender en este marketplace, necesitas conectar tu cuenta de Mercado Pago.</p>
 
-		<a href="/api/mp/oauth/start" class="btn-primary">
+		<button on:click={handleOAuthConnect} class="btn-primary">
 			Conectar con Mercado Pago
-		</a>
+		</button>
 	</div>
 
 	{#if !loading && sellers.length > 0}
@@ -79,6 +122,9 @@
 		text-decoration: none;
 		font-weight: 600;
 		margin-top: 1rem;
+		border: none;
+		cursor: pointer;
+		font-size: 1rem;
 	}
 
 	.btn-primary:hover {

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { Browser } from '@capacitor/browser';
 
 	let sellers: any[] = [];
 	let loading = true;
@@ -60,15 +61,28 @@
 
 			const { init_point } = await res.json();
 
-			// Redirigir según plataforma
-			if (isNative === 'app') {
-				// En app móvil: abrir Browser de Capacitor
-				const { Browser } = await import('@capacitor/browser');
-				await Browser.open({ url: init_point });
-			} else {
-				// En web: redirigir normalmente
-				window.location.href = init_point;
-			}
+		// Redirigir según plataforma
+		if (isNative === 'app') {
+			// En app móvil: abrir Browser de Capacitor
+			console.log('🔗 Abriendo MercadoPago checkout...');
+			
+			// Listener para cuando se cierra el browser
+			const listener = await Browser.addListener('browserFinished', () => {
+				console.log('🔗 Browser cerrado, reseteando estado...');
+				paying = false;
+				listener.remove();
+			});
+
+			// Abrir browser con opciones optimizadas
+			await Browser.open({ 
+				url: init_point,
+				presentationStyle: 'fullscreen', // Abre en pantalla completa (más rápido)
+				toolbarColor: '#ffffff'
+			});
+		} else {
+			// En web: redirigir normalmente
+			window.location.href = init_point;
+		}
 		} catch (error) {
 			console.error('Error al procesar pago:', error);
 			alert(`Error: ${error}`);

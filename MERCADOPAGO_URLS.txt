@@ -1,0 +1,143 @@
+═══════════════════════════════════════════════════════════════
+    MERCADOPAGO DASHBOARD CONFIGURATION
+═══════════════════════════════════════════════════════════════
+
+✅ CURRENTLY USING: Cloudflare Tunnel (Webhook Testing Mode)
+
+Current Cloudflare Tunnel URL:
+https://oasis-rubber-linking-established.trycloudflare.com
+
+⚠️  IMPORTANT: This URL changes every time you restart cloudflared!
+⚠️  SSL Issue: Bitdefender may block this - see instructions below
+
+═══════════════════════════════════════════════════════════════
+    URLS TO UPDATE IN MERCADOPAGO DASHBOARD
+═══════════════════════════════════════════════════════════════
+
+🔗 1. OAuth Redirect URI
+   Location: https://www.mercadopago.com/developers/panel/app
+             → Your App → Settings → Redirect URIs
+   
+   Add this URL:
+   https://oasis-rubber-linking-established.trycloudflare.com/api/mp/oauth/callback
+
+
+🪝 2. Webhook URL
+   Location: https://www.mercadopago.com/developers/panel/app
+             → Your App → Webhooks / Notifications
+   
+   Add this URL:
+   https://oasis-rubber-linking-established.trycloudflare.com/api/mp/webhook
+   
+   Select events: ✅ Payments
+
+
+🔑 3. Copy Credentials to .env file:
+   
+   From the MP Dashboard, copy:
+   - APP_ID (Client ID) → MP_CLIENT_ID
+   - Client Secret → MP_CLIENT_SECRET
+   - Webhook Secret → WEEBHOOK_SECRET
+
+
+═══════════════════════════════════════════════════════════════
+    WHEN TUNNEL URL CHANGES
+═══════════════════════════════════════════════════════════════
+
+If you restart cloudflared and get a new tunnel URL:
+
+1. Check new URL in logs:
+   tail -f /tmp/cloudflared-tunnel.log | grep "https://"
+
+2. Update in MercadoPago Dashboard:
+   - Redirect URI (above)
+   - Webhook URL (above)
+
+3. Update in your code:
+   - .env file (MP_REDIRECT_URI, PUBLIC_APP_URL, PUBLIC_WEBHOOK_URL)
+   - capacitor.config.ts (server.url)
+
+4. Restart dev server:
+   pkill -f "vite dev"
+   npm run dev -- --host 0.0.0.0
+
+5. Sync iOS:
+   npx cap sync ios
+
+═══════════════════════════════════════════════════════════════
+    CURRENT SERVER STATUS
+═══════════════════════════════════════════════════════════════
+
+✅ Dev Server: Running on http://localhost:5174
+✅ Cloudflare Tunnel: Running - Public URL active
+✅ Capacitor Config: Updated with tunnel URL
+✅ iOS Project: Synced and ready
+✅ .env file: Created (needs your MP credentials)
+
+═══════════════════════════════════════════════════════════════
+
+Next Steps:
+1. Fix Bitdefender SSL issue (see below) ⚠️ IMPORTANT
+2. Update .env with your MercadoPago TEST credentials
+3. Add the URLs above to MercadoPago dashboard
+4. Restart dev server (to load new .env values)
+5. Run app in Xcode simulator (already open)
+6. Test the complete flow with webhooks!
+
+For detailed instructions, see: SETUP_INSTRUCTIONS.md
+
+═══════════════════════════════════════════════════════════════
+    🔒 FIXING BITDEFENDER SSL ISSUE
+═══════════════════════════════════════════════════════════════
+
+Your Mac has Bitdefender (or similar antivirus) that intercepts HTTPS
+traffic with its own certificate. iOS doesn't trust this certificate.
+
+🎯 SOLUTION - Choose ONE:
+
+Option A: Disable SSL Scanning Temporarily (Recommended)
+--------------------------------------------------------
+1. Open Bitdefender
+2. Go to: Protection → Web Protection → Settings
+3. Find "Scan SSL" or "SSL Scanning"
+4. Disable it (or pause protection temporarily)
+5. Run your iOS app - should work now!
+6. Re-enable when done testing
+
+Option B: Add Exception for Cloudflare Tunnel
+---------------------------------------------
+1. Open Bitdefender
+2. Go to: Protection → Web Protection → Settings
+3. Find "SSL Exceptions" or "Whitelist"
+4. Add: *.trycloudflare.com
+5. Save and restart app
+
+Option C: Switch Back to Local IP (No webhooks)
+-----------------------------------------------
+If you can't modify Bitdefender settings:
+
+Edit capacitor.config.ts:
+```
+server: {
+  url: "http://192.168.10.175:5174",
+  cleartext: true
+}
+```
+
+Then run: npx cap sync ios
+
+═══════════════════════════════════════════════════════════════
+    🧪 TESTING IF SSL WORKS
+═══════════════════════════════════════════════════════════════
+
+After fixing Bitdefender, test in Terminal:
+
+curl https://oasis-rubber-linking-established.trycloudflare.com
+
+If you see HTML content → ✅ SSL works!
+If you see SSL error → ❌ Still blocked
+
+Then build in Xcode and run on simulator.
+
+═══════════════════════════════════════════════════════════════
+
